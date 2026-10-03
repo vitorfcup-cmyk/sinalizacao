@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Molecular Signalling Simulator</title>
+    <!-- Include Tailwind CSS for rapid, modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Include FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @keyframes pulse-slow {
+            0%, 100% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.05); opacity: 1; }
+        }
+        .active-path {
+            stroke-dasharray: 8;
+            animation: dash 2s linear infinite;
+        }
+        @keyframes dash {
+            to { stroke-dashoffset: -20; }
+        }
+        .molecule {
+            transition: all 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col">
+
+    <!-- Header Section -->
+    <header class="bg-slate-800 border-b border-slate-700 p-4 shadow-md">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-indigo-400"><i class="fa-solid fa-dna mr-2"></i>SignallingCraft</h1>
+                <p class="text-xs text-slate-400 mt-1">Interactive Pedagogical Platform for Molecular Signalling & Protein Interactions</p>
+            </div>
+            <!-- Lesson Controls -->
+            <div class="flex flex-wrap gap-2">
+                <button onclick="loadPathway('rtk')" id="btn-rtk" class="pathway-btn px-4 py-2 rounded-lg bg-indigo-600 font-semibold text-sm transition hover:bg-indigo-500 shadow">
+                    RTK / Ras / MAPK Pathway
+                </button>
+                <button onclick="loadPathway('gpcr')" id="btn-gpcr" class="pathway-btn px-4 py-2 rounded-lg bg-slate-700 font-semibold text-sm transition hover:bg-indigo-500 shadow">
+                    GPCR / cAMP Pathway
+                </button>
+                <button onclick="resetPathway()" class="px-4 py-2 rounded-lg bg-rose-600 font-semibold text-sm transition hover:bg-rose-500 shadow">
+                    <i class="fa-solid fa-rotate-left mr-1"></i> Reset Simulation
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left: Interactive Canvas (2 Columns wide on large screens) -->
+        <div class="lg:col-span-2 flex flex-col bg-slate-800 rounded-xl border border-slate-700 shadow-xl overflow-hidden min-h-[500px]">
+            <!-- Canvas Header Toolbar -->
+            <div class="bg-slate-800/50 border-b border-slate-700 p-3 flex justify-between items-center">
+                <span class="text-sm font-medium text-slate-300 flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+                    Interactive Cellular Sandbox
+                </span>
+                <div class="flex gap-4 text-xs text-slate-400">
+                    <span class="flex items-center gap-1"><i class="fa-solid fa-hand-pointer text-indigo-400"></i> Click molecules to advance steps</span>
+                </div>
+            </div>
+
+            <!-- SVG Simulation Window -->
+            <div class="flex-1 bg-slate-950 relative flex items-center justify-center p-2 select-none">
+                <svg id="simulation-canvas" viewBox="0 0 800 500" class="w-full h-full max-h-[550px]">
+                    <!-- Definitions for gradients and markers -->
+                    <defs>
+                        <linearGradient id="membraneGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#334155" />
+                            <stop offset="50%" stop-color="#475569" />
+                            <stop offset="100%" stop-color="#334155" />
+                        </linearGradient>
+                        <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 1 L 10 5 L 0 9 z" fill="#818cf8"/>
+                        </marker>
+                    </defs>
+
+                    <!-- Background Cell Structures -->
+                    <!-- Plasma Membrane -->
+                    <rect x="0" y="120" width="800" height="30" fill="url(#membraneGrad)" opacity="0.8" rx="4"/>
+                    <text x="20" y="140" fill="#94a3b8" font-size="12" font-weight="bold" letter-spacing="1">PLASMA MEMBRANE</text>
+                    <text x="20" y="70" fill="#64748b" font-size="12" font-weight="bold" letter-spacing="1">EXTRACELLULAR SPACE</text>
+                    
+                    <!-- Nucleus Boundary -->
+                    <path d="M 0 420 Q 400 390 800 420 L 800 500 L 0 500 Z" fill="#1e1b4b" opacity="0.5" stroke="#312e81" stroke-width="2"/>
+                    <text x="20" y="460" fill="#818cf8" font-size="12" font-weight="bold" letter-spacing="1">NUCLEUS</text>
+
+                    <!-- Dynamic Pathway Elements Container -->
+                    <g id="dynamic-elements"></g>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Right: Educational Dashboard & Information Panels -->
+        <div class="flex flex-col gap-4">
+            
+            <!-- Panel 1: Step Guide & Live Explainer -->
+            <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 shadow-lg flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 class="font-bold text-lg text-indigo-300">Active Concept Explainer</h2>
+                        <span id="step-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-900/60 text-indigo-300 border border-indigo-700">Step 1</span>
+                    </div>
+                    <h3 id="step-title" class="text-md font-semibold text-white mb-2">Loading Pathway...</h3>
+                    <p id="step-description" class="text-sm text-slate-300 leading-relaxed min-h-[100px]">
+                        Select a pathway from the top menu to begin your interactive cellular walkthrough.
+                    </p>
+                </div>
+                
+                <!-- Progress Indicators -->
+                <div class="mt-4 pt-4 border-t border-slate-700 flex justify-between items-center">
+                    <div class="flex gap-1" id="progress-dots">
+                        <!-- Filled dynamically -->
+                    </div>
+                    <button id="next-btn" disabled onclick="advanceStep()" class="px-4 py-2 bg-slate-700 text-slate-400 font-medium text-xs rounded-lg transition flex items-center gap-2 cursor-not-allowed">
+                        Next Step <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Panel 2: Molecular Feature / Protein Breakdown -->
+            <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 shadow-lg flex-1">
+                <h2 class="font-bold text-sm uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info text-indigo-400"></i> Structural Chemistry Insights
+                </h2>
+                <div id="chemistry-insights" class="space-y-3 text-xs text-slate-300">
+                    <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-700/50">
+                        <span class="font-bold text-indigo-400 block mb-1">Pedagogical Value:</span>
+                        This layout directly connects spatial protein transformations (dimerization, phosphorylation) to systemic genetic responses. Show this simulation to your jury to demonstrate real-time mechanism visualization.
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 border-t border-slate-800 p-3 text-center text-xs text-slate-500">
+        Designed for Jury Presentation & Classroom Engagement &bull; SignallingCraft &copy; 2026
+    </footer>
+
+    <!-- Simulation Logic Engine -->
+    <script>
+        const pathways = {
+            rtk: {
+                title: "Receptor Tyrosine Kinase (RTK) / MAPK Pathway",
+                steps: [
+                    {
+                        title: "Ligand Binding & Dimerization",
+                        description: "Growth factors (ligands) bind to extracellular domains of monomers. This induces physical <strong>Protein-Protein Interaction (PPI)</strong>, forcing two receptors to cross-link into a active dimer conformation.",
+                        insights: "<strong>Structural Event:</strong> Dimerization aligns intracellular kinase domains, overcoming structural auto-inhibition thresholds.",
+                        render: (step) => `
+                            <!-- Ligand A -->
+                            <circle cx="360" cy="50" r="12" fill="#ef4444" class="molecule ${step > 0 ? '' : 'animate-bounce'}"/>
+                            <!-- Ligand B -->
+                            <circle cx="440" cy="50" r="12" fill="#ef4444" class="molecule ${step > 0 ? '' : 'animate-bounce'}"/>
+                            
+                            <!-- RTK Monomer Left -->
+                            <g class="molecule" transform="translate(${step > 0 ? '380' : '300'}, 0)">
+                                <rect x="0" y="80" width="16" height="120" fill="#3b82f6" rx="4"/>
+                                <circle cx="8" cy="170" r="14" fill="#1d4ed8"/>
+                                <text x="-25" y="105" fill="#93c5fd" font-size="10" font-weight="bold">RTK Monomer</text>
+                            </g>
+                            <!-- RTK Monomer Right -->
+                            <g class="molecule" transform="translate(${step > 0 ? '404' : '484'}, 0)">
+                                <rect x="0" y="80" width="16" height="120" fill="#3b82f6" rx="4"/>
+                                <circle cx="8" cy="170" r="14" fill="#1d4ed8"/>
+                            </g>
+                        `
+                    },
+                    {
+                        title: "Autophosphorylation",
+                        description: "The paired kinase domains cross-phosphorylate each other's tyrosine tails inside the cytoplasm. Click the glowing phosphate target molecules to activate downstream binding pockets.",
+                        insights: "<strong>Chemical Transformation:</strong> Negative charges on introduced PO₄³⁻ groups create high-affinity structural motifs recognizable by SH2-domain containing adapter proteins.",
+                        render: (step) => `
+                            <!-- Ligand bound dimer -->
+                            <circle cx="394" cy="90" r="12" fill="#ef4444"/>
+                            <circle cx="406" cy="90" r="12" fill="#ef4444"/>
+                            <rect x="380" y="100" width="40" height="100" fill="#3b82f6" rx="4"/>
+                            <circle cx="390" cy="170" r="14" fill="#1d4ed8"/>
+                            <circle cx="410" cy="170" r="14" fill="#1d4ed8"/>
+                            
+                            <!-- Phosphates -->
+                            <g class="molecule cursor-pointer" onclick="advanceStep()" transform="translate(${step > 1 ? '365' : '320'}, 175)">
+                                <circle cx="0" cy="0" r="10" fill="#eab308" class="${step === 1 ? 'animate-ping' : ''}"/>
+                                <text x="-4" y="3" fill="#000" font-size="10" font-weight="bold">P</text>
+                            </g>
+                            <g class="molecule cursor-pointer" onclick="advanceStep()" transform="translate(${step > 1 ? '435' : '480'}, 175)">
+                                <circle cx="0" cy="0" r="10" fill="#eab308" class="${step === 1 ? 'animate-ping' : ''}"/>
+                                <text x="-4" y="3" fill="#000" font-size="10" font-weight="bold">P</text>
+                            </g>
+                        `
+                    },
+                    {
+                        title: "Ras Activation (GDP to GTP Exchange)",
+                        description: "An adapter protein recruits SOS (a GEF), which interacts structurally with the membrane-bound G-protein <strong>Ras</strong>. This interaction causes Ras to eject low-energy GDP and capture high-energy GTP.",
+                        insights: "<strong>PPI Principle:</strong> GEFs don't phosphorylate GDP; they physically warp the binding pocket of Ras so GDP falls out, letting abundant cellular GTP slide into place.",
+                        render: (step) => `
+                            <!-- Receptor Complex Baseline -->
+                            <rect x="380" y="100" width="40" height="100" fill="#1e40af" rx="4"/>
+                            <circle cx="365" cy="175" r="10" fill="#eab308"/>
+                            <circle cx="435" cy="175" r="10" fill="#eab308"/>
+                            
+                            <!-- Ras Protein G-Domain -->
+                            <g class="molecule cursor-pointer" onclick="advanceStep()" transform="translate(520, 160)">
+                                <rect x="0" y="0" width="70" height="40" fill="${step > 2 ? '#22c55e' : '#64748b'}" rx="8"/>
+                                <text x="24" y="24" fill="#fff" font-size="12" font-weight="bold">Ras</text>
+                                <!-- Nucleotide box -->
+                                <rect x="75" y="10" width="35" height="20" fill="#0f172a" rx="4"/>
+                                <text x="80" y="24" fill="${step > 2 ? '#22c55e' : '#f43f5e'}" font-size="10" font-weight="bold">${step > 2 ? 'GTP' : 'GDP'}</text>
+                            </g>
+                            <!-- Connection link indication if step active -->
+                            ${step === 2 ? '<path d="M 435 175 L 520 180" stroke="#eab308" stroke-width="2" class="active-path"/>' : ''}
+                        `
+                    },
+                    {
+                        title: "The Kinase Cascade (MAPK Relay)",
+                        description: "Activated Ras recruits and structurally activates <strong>Raf</strong> (MAPKKK), which phosphorylates <strong>Mek</strong> (MAPKK), which subsequently phosphorylates <strong>Erk</strong> (MAPK). This is a biological signal amplifier.",
+                        insights: "<strong>Signal Amplification:</strong> One single upstream active enzyme can modify thousands of downstream substrate molecules sequentially, guaranteeing robust execution.",
+                        render: (step) => `
+                            <!-- Active Membrane Hub -->
+                            <rect x="520" y="140" width="70" height="30" fill="#22c55e" rx="4"/>
+                            <text x="542" y="160" fill="#fff" font-size="11" font-weight="bold">Ras-GTP</text>
+                            
+                            <!-- Cascade Step 1: Raf -->
+                            <g class="molecule" transform="translate(530, 210)">
+                                <circle cx="25" cy="25" r="22" fill="#a855f7"/>
+                                <text x="14" y="29" fill="#fff" font-size="11" font-weight="bold">Raf</text>
+                                <circle cx="42" cy="12" r="7" fill="#eab308"/><text x="40" y="15" fill="#000" font-size="8" font-weight="bold">P</text>
+                            </g>
+                            
+                            <!-- Cascade Step 2: Mek -->
+                            <g class="molecule cursor-pointer" onclick="advanceStep()" transform="translate(${step > 3 ? '420' : '530'}, ${step > 3 ? '270' : '290'})">
+                                <circle cx="25" cy="25" r="22" fill="#ec4899"/>
+                                <text x="12" y="29" fill="#fff" font-size="11" font-weight="bold">Mek</text>
+                                ${step > 3 ? '<circle cx="42" cy="12" r="7" fill="#eab308"/>' : ''}
+                            </g>
+
+                            <!-- Cascade Step 3: Erk -->
+                            <g class="molecule" transform="translate(${step > 3 ? '310' : '530'}, ${step > 3 ? '340' : '370'})">
+                                <circle cx="25" cy="25" r="22" fill="#06b6d4"/>
+                                <text x="14" y="29" fill="#fff" font-size="11" font-weight="bold">Erk</text>
+                                ${step > 3 ? '<circle cx="42" cy="12" r="7" fill="#eab308"/><circle cx="8" cy="12" r="7" fill="#eab308"/>' : ''}
+                            </g>
+
+                            <!-- Arrows connecting cascade -->
+                            <path d="M 555 260 L 555 285" stroke="#818cf8" stroke-width="2" marker-end="url(#arrow)"/>
+                            <path d="M 555 340 L 555 365" stroke="#818cf8" stroke-width="2" marker-end="url(#arrow)"/>
+                        `
+                    },
+                    {
+                        title: "Nuclear Translocation & Gene Expression",
+                        description: "Fully activated, double-phosphorylated <strong>Erk</strong> passes across the nuclear pore complex. Inside the nucleus, it acts as a transcriptional regulator, promoting cellular division.",
+                        insights: "<strong>Phenotypic Outcome:</strong> The original mechanical physical touch at the surface membrane has successfully computed into structural alteration of targeted genetic promoters.",
+                        render: (step) => `
+                            <!-- Nuclear Target Transcript -->
+                            <g class="molecule" transform="translate(350, 440)">
+                                <path d="M 0 10 Q 50 0 100 10 Q 150 20 200 10" stroke="#38bdf8" stroke-width="3" fill="none"/>
+                                <path d="M 0 18 Q 50 8 100 18 Q 150 28 200 18" stroke="#38bdf8" stroke-width="3" fill="none"/>
+                                <text x="40" y="-10" fill="#a7f3d0" font-size="11" font-weight="bold" class="animate-pulse">Gene Transcription Active</text>
+                            </g>
+                            
+                            <!-- Translocated Erk -->
+                            <g class="molecule" transform="translate(260, 420)">
+                                <circle cx="25" cy="25" r="22" fill="#06b6d4" class="pulse-slow"/>
+                                <text x="14" y="29" fill="#fff" font-size="11" font-weight="bold">Erk</text>
+                                <circle cx="42" cy="12" r="7" fill="#eab308"/>
+                            </g>
+                        `
+                    }
+                ]
+            },
+            gpcr: {
+                title: "G-Protein Coupled Receptor (GPCR) Pathway",
+                steps: [
+                    {
+                        title: "Ligand Engagement & Alpha Dissociation",
+                        description: "An extracellular signal molecule connects with the 7-transmembrane domain GPCR, causing a profound conformational pivot that makes the internal Gα subunit drop GDP, accept GTP, and sever its bond from Gβγ.",
+                        insights: "<strong>Structural Event:</strong> GPCR behaves like a physical gear shaft transmitting mechanical stress coordinates directly through the lipid bi-layer.",
+                        render: (step) => `
+                            <!-- GPCR 7 TM Domains snakes -->
+                            <path d="M 200 80 L 210 160 L 220 80 L 230 160 L 240 80 L 250 160 L 260 80" stroke="#f43f5e" stroke-width="6" fill="none" stroke-linejoin="round"/>
+                            <!-- Ligand -->
+                            <circle cx="230" cy="60" r="10" fill="#ea580c"/>
+
+                            <!-- Heterotrimeric G Alpha -->
+                            <g class="molecule" transform="translate(${step > 0 ? '340' : '250'}, 160)">
+                                <rect x="0" y="0" width="50" height="30" fill="#eab308" rx="4"/>
+                                <text x="14" y="18" fill="#000" font-size="11" font-weight="bold">Gα</text>
+                            </g>
+                            <!-- Heterotrimeric G Beta/Gamma -->
+                            <g class="molecule" transform="translate(210, 165)">
+                                <rect x="0" y="0" width="35" height="25" fill="#a855f7" rx="4"/>
+                                <text x="5" y="16" fill="#fff" font-size="9" font-weight="bold">Gβγ</text>
+                            </g>
+                        `
+                    },
+                    {
+                        title: "Adenylate Cyclase Interaction",
+                        description: "The detached active Gα-GTP subunit moves through the membrane line to structurally docks with <strong>Adenylate Cyclase</strong>, turning on its catalytic domains.",
+                        insights: "<strong>Enzymatic Transformation:</strong> Active Adenylate Cyclase converts abundant energetic substrate molecules of ATP into cyclic AMP (cAMP) secondary messengers.",
+                        render: (step) => `
+                            <!-- Inactive GPCR platform -->
+                            <path d="M 200 80 L 210 160 L 220 80 L 230 160 L 240 80 L 250 160 L 260 80" stroke="#f43f5e" stroke-width="4" fill="none" opacity="0.5"/>
+                            
+                            <!-- Adenylate Cyclase Enzyme -->
+                            <g class="molecule" transform="translate(460, 110)">
+                                <rect x="0" y="0" width="90" height="50" fill="#14b8a6" rx="6"/>
+                                <text x="8" y="30" fill="#fff" font-size="11" font-weight="bold">Adenylate Cyclase</text>
+                            </g>
+
+                            <!-- G-Alpha docked -->
+                            <g class="molecule cursor-pointer" onclick="advanceStep()" transform="translate(${step > 1 ? '415' : '340'}, 130)">
+                                <rect x="0" y="0" width="45" height="25" fill="#eab308" rx="4"/>
+                                <text x="12" y="16" fill="#000" font-size="10" font-weight="bold">Gα</text>
+                            </g>
+                        `
+                    },
+                    {
+                        title: "Secondary Messenger Generation (cAMP)",
+                        description: "With Adenylate Cyclase fully active, the localized cell pool experiences a burst synthesis of **cAMP** molecules floating into the cytoplasm.",
+                        insights: "<strong>Concept Note:</strong> Diffusable tiny messengers skip structural physical tether limits, scattering information hundreds of nanometers into structural recesses instantly.",
+                        render: (step) => `
+                            <rect x="460" y="110" width="90" height="50" fill="#14b8a6" rx="6"/>
+                            <rect x="415" y="130" width="45" height="25" fill="#eab308" rx="4"/>
+                            
+                            <!-- Spawning cAMP cloud elements -->
+                            <g class="molecule cursor-pointer" onclick="advanceStep()" transform="translate(480, 210)">
+                                <circle cx="0" cy="0" r="12" fill="#fb923c" class="animate-ping"/>
+                                <text x="-8" y="3" fill="#000" font-size="9" font-weight="bold">cAMP</text>
+                            </g>
+                            <g class="molecule" transform="translate(540, 240)"><circle cx="0" cy="0" r="10" fill="#fb923c"/><text x="-8" y="3" fill="#000" font-size="8" font-weight="bold">cAMP</text></g>
+                            <g class="molecule" transform="translate(420, 250)"><circle cx="0" cy="0" r="10" fill="#fb923c"/><text x="-8" y="3" fill="#000" font-size="8" font-weight="bold">cAMP</text></g>
+                        `
+                    },
+                    {
+                        title: "Protein Kinase A (PKA) Activation",
+                        description: "Synthesized cAMP binds to regulatory domains of <strong>Protein Kinase A (PKA)</strong>. This forces a massive structural geometry variance that completely detaches the active catalytic sub-elements.",
+                        insights: "<strong>Allosteric Regulation:</strong> Binding at an allosteric regulatory site alters structural integrity of the complex, freeing active loops without requiring energy input.",
+                        render: (step) => `
+                            <!-- Active free cAMP binding elements -->
+                            <circle cx="430" cy="240" r="10" fill="#fb923c"/>
+                            <circle cx="445" cy="240" r="10" fill="#fb923c"/>
+                            
+                            <!-- PKA Complex Structural breakdown -->
+                            <!-- Regulatory domain -->
+                            <rect x="420" y="290" width="60" height="30" fill="#475569" rx="4"/>
+                            <text x="430" y="310" fill="#fff" font-size="10">PKA-Reg</text>
+                            
+                            <!-- Catalytic domain escaping -->
+                            <g class="molecule" transform="translate(${step > 3 ? '320' : '420'}, ${step > 3 ? '360' : '325'})">
+                                <circle cx="20" cy="20" r="18" fill="#f43f5e" class="pulse-slow"/>
+                                <text x="14" y="24" fill="#fff" font-size="11" font-weight="bold">PKA-C</text>
+                            </g>
+                        `
+                    }
+                ]
+            }
+        };
+
+        let currentPathwayId = 'rtk';
+        let currentStepIndex = 0;
+
+        function loadPathway(id) {
+            currentPathwayId = id;
+            currentStepIndex = 0;
+            
+            // Manage UI Button active styles
+            document.querySelectorAll('.pathway-btn').forEach(btn => btn.classList.replace('bg-indigo-600', 'bg-slate-700'));
+            document.getElementById(`btn-${id}`).classList.replace('bg-slate-700', 'bg-indigo-600');
+
+            updateSimulationUI();
+        }
+
+        function advanceStep() {
+            const pathway = pathways[currentPathwayId];
+            if (currentStepIndex < pathway.steps.length - 1) {
+                currentStepIndex++;
+                updateSimulationUI();
+            }
+        }
+
+        function resetPathway() {
+            currentStepIndex = 0;
+            updateSimulationUI();
+        }
+
+        function updateSimulationUI() {
+            const pathway = pathways[currentPathwayId];
+            const step = pathway.steps[currentStepIndex];
+
+            // Update panel texts
+            document.getElementById('step-badge').innerText = `Step ${currentStepIndex + 1} / ${pathway.steps.length}`;
+            document.getElementById('step-title').innerText = step.title;
+            document.getElementById('step-description').innerHTML = step.description;
+            
+            // Detail insights
+            document.getElementById('chemistry-insights').innerHTML = `
+                <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-700/50">
+                    <span class="font-bold text-indigo-400 block mb-1">Structural Interaction:</span>
+                    ${step.insights}
+                </div>
+                <div class="bg-indigo-950/40 p-3 rounded-lg border border-indigo-800/40 text-slate-400">
+                    <span class="font-bold text-indigo-300 block mb-1"><i class="fa-solid fa-chalkboard-user mr-1"></i> Jury Tip:</span>
+                    Point out how physical conformation rearrangement transforms biological software signals into targeted mechanical movements.
+                </div>
+            `;
+
+            // Draw SVG
+            document.getElementById('dynamic-elements').innerHTML = step.render(currentStepIndex);
+
+            // Handle Next Button state
+            const nextBtn = document.getElementById('next-btn');
+            if (currentStepIndex < pathway.steps.length - 1) {
+                nextBtn.disabled = false;
+                nextBtn.classList.replace('bg-slate-700', 'bg-indigo-600');
+                nextBtn.classList.replace('text-slate-400', 'text-white');
+                nextBtn.classList.replace('cursor-not-allowed', 'cursor-pointer');
+            } else {
+                nextBtn.disabled = true;
+                nextBtn.classList.replace('bg-indigo-600', 'bg-slate-700');
+                nextBtn.classList.replace('text-white', 'text-slate-400');
+                nextBtn.classList.replace('cursor-not-allowed', 'cursor-pointer');
+                nextBtn.className += ' cursor-not-allowed';
+            }
+
+            // Draw dots indicator
+            const dotsContainer = document.getElementById('progress-dots');
+            dotsContainer.innerHTML = '';
+            for (let i = 0; i < pathway.steps.length; i++) {
+                const dot = document.createElement('span');
+                dot.className = `w-2 h-2 rounded-full transition-all duration-300 ${i === currentStepIndex ? 'bg-indigo-400 w-4' : 'bg-slate-600'}`;
+                dotsContainer.appendChild(dot);
+            }
+        }
+
+        // Boot initial state
+        window.onload = () => {
+            loadPathway('rtk');
+        };
+    </script>
+</body>
+</html>
