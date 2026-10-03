@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProteoMed Interactive - Clinical Proteomics Simulator</title>
+    <!-- Tailwind CSS for modern, premium medical UI styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for clinical icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #111827; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+        .pulse-slow { animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .6; } }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 font-sans min-h-screen flex flex-col selection:bg-teal-500 selection:text-white">
+
+    <!-- Deployment Guide Top Notification Bar -->
+    <div class="bg-gradient-to-r from-teal-900 to-emerald-900 text-teal-100 text-xs px-4 py-2 flex flex-col md:flex-row justify-between items-center border-b border-teal-700/30 gap-2">
+        <div class="flex items-center gap-2">
+            <span class="bg-teal-500 text-gray-950 text-[10px] font-bold px-1.5 py-0.5 rounded">WEB READY</span>
+            <span>This code is fully configured for global hosting. You can host it free instantly on GitHub Pages, Netlify, or Vercel so anyone outside your computer can access it.</span>
+        </div>
+        <button onclick="document.getElementById('deployment-instructions').scrollIntoView({behavior: 'smooth'})" class="underline hover:text-white font-semibold transition-colors">
+            View Public Hosting Guide <i class="fa-solid fa-arrow-down ml-1"></i>
+        </button>
+    </div>
+
+    <!-- Main Navigation Header -->
+    <header class="bg-gray-900 border-b border-gray-800 px-6 py-4 sticky top-0 z-50 backdrop-blur-md bg-opacity-95">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-br from-teal-500 to-emerald-500 p-2.5 rounded-xl shadow-lg shadow-teal-500/10">
+                    <i class="fa-solid fa-dna text-gray-950 text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                        ProteoMed <span class="text-xs bg-gray-800 text-teal-400 border border-teal-900 px-2 py-0.5 rounded-full font-mono">v1.0</span>
+                    </h1>
+                    <p class="text-xs text-gray-400">Clinical Proteomics & Biomarker Discovery Simulator</p>
+                </div>
+            </div>
+            
+            <!-- Case Picker Tabs -->
+            <div class="bg-gray-950 p-1 rounded-xl border border-gray-800 flex gap-1 w-full sm:w-auto">
+                <button id="btn-case1" onclick="switchCase('case1')" class="flex-1 sm:flex-none text-xs px-4 py-2 rounded-lg font-medium transition-all duration-200 bg-teal-500 text-gray-950 shadow-md">
+                    <i class="fa-solid fa-heart-pulse mr-1.5"></i> Acute MI Case
+                </button>
+                <button id="btn-case2" onclick="switchCase('case2')" class="flex-1 sm:flex-none text-xs px-4 py-2 rounded-lg font-medium transition-all duration-200 text-gray-400 hover:text-gray-200">
+                    <i class="fa-solid fa-capsules mr-1.5"></i> Oncology Biomarkers
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Application Workspace -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- LEFT PANEL: Case Presentation & Control Dashboard (5 Cols) -->
+        <section class="lg:col-span-5 flex flex-col gap-6">
+            
+            <!-- Patient Profile & Clinical Vignette -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 shadow-xl">
+                <div class="flex justify-between items-start mb-4">
+                    <span class="text-xs font-semibold tracking-wider text-teal-400 uppercase font-mono">Clinical Vignette</span>
+                    <span id="patient-tag" class="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[11px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <i class="fa-solid fa-circle text-[6px] animate-pulse"></i> Critical Care Unit
+                    </span>
+                </div>
+                <h2 id="patient-title" class="text-lg font-bold text-white mb-2">Patient Presentation: Chest Pain Evaluation</h2>
+                <p id="patient-desc" class="text-sm text-gray-300 leading-relaxed">
+                    A 58-year-old male arrives at the Emergency Department with crushing substernal chest pain radiating to the left arm for 2 hours, accompanied by diaphoresis. Electrocardiogram (ECG) shows equivocal ST-segment modifications. Immediate clinical verification requires rapid biomarker profiling to differentiate acute myocardial infarction from non-cardiac chest pain.
+                </p>
+                
+                <div class="mt-4 pt-4 border-t border-gray-800 grid grid-cols-2 gap-3 text-xs">
+                    <div class="bg-gray-950 p-2.5 rounded-lg border border-gray-800">
+                        <span class="text-gray-500 block mb-0.5">Primary Challenge</span>
+                        <span id="meta-challenge" class="font-medium text-gray-200">Isolate Myocardial Injury Early</span>
+                    </div>
+                    <div class="bg-gray-950 p-2.5 rounded-lg border border-gray-800">
+                        <span class="text-gray-500 block mb-0.5">Proteomic Method</span>
+                        <span id="meta-method" class="font-medium text-teal-400">Targeted MS / Immunoassay</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Simulation Interactive Controls -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 shadow-xl flex-1 flex flex-col justify-between">
+                <div>
+                    <h3 class="text-sm font-bold text-gray-200 mb-3 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-teal-500"></i> Interactive Pipeline Steps
+                    </h3>
+                    <p class="text-xs text-gray-400 mb-4">
+                        Walk the clinical board or your students through each analytical tier of diagnostic discovery:
+                    </p>
+
+                    <!-- Steps Timeline Elements -->
+                    <div class="space-y-3">
+                        <button id="step-0" onclick="goToStep(0)" class="w-full text-left p-3 rounded-xl border border-teal-500/30 bg-teal-950/20 text-teal-300 flex items-start gap-3 transition-all duration-200">
+                            <span class="w-5 h-5 rounded-full bg-teal-500 text-gray-950 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">1</span>
+                            <div>
+                                <h4 class="text-xs font-bold text-white" id="step-title-0">Biofluid Collection & Fractionation</h4>
+                                <p class="text-[11px] text-gray-400 mt-0.5" id="step-desc-0">Isolating blood plasma from cells to capture shedding markers.</p>
+                            </div>
+                        </button>
+                        
+                        <button id="step-1" onclick="goToStep(1)" class="w-full text-left p-3 rounded-xl border border-gray-800 hover:border-gray-700 bg-gray-950/40 text-gray-400 flex items-start gap-3 transition-all duration-200">
+                            <span class="w-5 h-5 rounded-full bg-gray-800 text-gray-400 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">2</span>
+                            <div>
+                                <h4 class="text-xs font-bold text-gray-300" id="step-title-1">Mass Spectrometry Ionization</h4>
+                                <p class="text-[11px] text-gray-500 mt-0.5" id="step-desc-1">Converting complex peptides into charged gaseous ions.</p>
+                            </div>
+                        </button>
+
+                        <button id="step-2" onclick="goToStep(2)" class="w-full text-left p-3 rounded-xl border border-gray-800 hover:border-gray-700 bg-gray-950/40 text-gray-400 flex items-start gap-3 transition-all duration-200">
+                            <span class="w-5 h-5 rounded-full bg-gray-800 text-gray-400 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">3</span>
+                            <div>
+                                <h4 class="text-xs font-bold text-gray-300" id="step-title-2">Spectral Profiling & Diagnostic Discovery</h4>
+                                <p class="text-[11px] text-gray-500 mt-0.5" id="step-desc-2">Identifying exact mass-to-charge ratios to identify disease proteins.</p>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Navigation Controls -->
+                <div class="flex gap-3 mt-6 pt-4 border-t border-gray-800">
+                    <button id="btn-prev" onclick="prevStep()" disabled class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white font-medium text-xs py-2.5 px-4 rounded-xl transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-chevron-left mr-1.5"></i> Previous Step
+                    </button>
+                    <button id="btn-next" onclick="nextStep()" class="flex-1 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-gray-950 font-bold text-xs py-2.5 px-4 rounded-xl transition-all duration-200 shadow-lg shadow-teal-500/10">
+                        Next Tier <i class="fa-solid fa-chevron-right ml-1.5"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT PANEL: Animated Visualization Canvas & Clinical Insights (7 Cols) -->
+        <section class="lg:col-span-7 flex flex-col gap-6">
+            
+            <!-- Interactive Micro-Simulation Canvas Window -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 shadow-xl flex flex-col">
+                <div class="flex justify-between items-center mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                        <span class="text-xs font-bold text-gray-300 tracking-wider uppercase" id="canvas-title">Interactive Window: Sample Preparation</span>
+                    </div>
+                    <span class="text-[11px] text-gray-500 font-mono" id="canvas-status">Status: Awaiting Interaction</span>
+                </div>
+                
+                <!-- Dynamic SVG Canvas Space -->
+                <div class="bg-gray-950 border border-gray-800 rounded-xl overflow-hidden relative min-h-[300px] flex items-center justify-center p-4">
+                    <svg id="animation-viewport" class="w-full h-auto max-h-[340px]" viewBox="0 0 600 350" xmlns="http://www.w3.org/2000/svg">
+                        <!-- SVG content is dynamically generated by the JavaScript state machinery -->
+                    </svg>
+                </div>
+                
+                <!-- Canvas Prompt Instruction Banner -->
+                <div id="canvas-prompt" class="mt-3 bg-teal-950/20 border border-teal-900/60 rounded-xl p-3 text-xs text-teal-300 flex items-center gap-2.5">
+                    <i class="fa-solid fa-hand-pointer text-teal-400 animate-bounce"></i>
+                    <span id="prompt-text">Click on the blood sample to run the centrifuge and separate patient plasma cells.</span>
+                </div>
+            </div>
+
+            <!-- Deep Clinical Insights Card -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 shadow-xl flex-1">
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-microscope text-emerald-400"></i> Clinical Validation & Pedagogical Explainer
+                </h3>
+                <div class="bg-gray-950 p-4 rounded-xl border border-gray-800 min-h-[110px]">
+                    <h4 id="insight-heading" class="text-sm font-bold text-teal-400 mb-1.5">Centrifugation & High-Abundance Depletion</h4>
+                    <p id="insight-body" class="text-xs text-gray-300 leading-relaxed">
+                        To uncover low-concentration cardiac biomarkers shedding from ischemic tissue, plasma proteins like albumin and immunoglobulins must be fractionated. Without active depletion, these high-abundance matrix elements override detection instruments, hiding crucial trace biomarkers.
+                    </p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- PUBLIC HOSTING & JURY PRESENTATION DEPLOYMENT GUIDE -->
+    <section id="deployment-instructions" class="max-w-7xl w-full mx-auto p-4 md:p-6 border-t border-gray-800 mt-auto">
+        <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="bg-teal-500/10 text-teal-400 p-2 rounded-xl">
+                    <i class="fa-solid fa-cloud-arrow-up text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white">How to Host This Publicly for Anyone to Access</h3>
+                    <p class="text-xs text-gray-400">Present this live link directly to your educational jury board members to showcase full deployment capabilities.</p>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs mt-4">
+                <!-- Option 1: GitHub Pages -->
+                <div class="bg-gray-950 p-4 rounded-xl border border-gray-800 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-bold text-gray-200 flex items-center gap-1.5"><i class="fa-brands fa-github text-sm"></i> GitHub Pages</span>
+                            <span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded font-medium">Recommended</span>
+                        </div>
+                        <ol class="list-decimal list-inside space-y-1.5 text-gray-400">
+                            <li>Create a free account at <a href="https://github.com" target="_blank" class="text-teal-400 hover:underline">github.com</a>.</li>
+                            <li>Create a new repository named <code class="bg-gray-900 text-gray-300 px-1 rounded font-mono">proteomics-app</code>.</li>
+                            <li>Upload this file and name it exactly <code class="bg-gray-900 text-gray-300 px-1 rounded font-mono">index.html</code>.</li>
+                            <li>Go to Settings &rarr; Pages, select the "main" branch, and click Save.</li>
+                        </ol>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-gray-800/60 text-gray-500 text-[11px]">
+                        Your custom app is now live at: <span class="text-teal-500/80 font-mono">yourusername.github.io/proteomics-app</span>
+                    </div>
+                </div>
+
+                <!-- Option 2: Netlify Drop -->
+                <div class="bg-gray-950 p-4 rounded-xl border border-gray-800 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-bold text-gray-200 flex items-center gap-1.5"><i class="fa-solid fa-cloud text-sm text-sky-400"></i> Netlify Drop</span>
+                            <span class="text-[10px] bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded font-medium">Fastest (No Login)</span>
+                        </div>
+                        <ol class="list-decimal list-inside space-y-1.5 text-gray-400">
+                            <li>Put this file into a folder on your computer. Rename the file to <code class="bg-gray-900 text-gray-300 px-1 rounded font-mono">index.html</code>.</li>
+                            <li>Go to <a href="https://app.netlify.com/drop" target="_blank" class="text-teal-400 hover:underline">app.netlify.com/drop</a> in your browser.</li>
+                            <li>Drag and drop the entire folder directly onto the screen.</li>
+                            <li>Your interactive web application goes live instantly with an active shareable link.</li>
+                        </ol>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-gray-800/60 text-gray-500 text-[11px]">
+                        Ideal for sharing via QR code or text to jury members during physical evaluations.
+                    </div>
+                </div>
+
+                <!-- Option 3: Vercel CLI / Git -->
+                <div class="bg-gray-950 p-4 rounded-xl border border-gray-800 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-bold text-gray-200 flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation text-sm text-white"></i> Vercel Platform</span>
+                            <span class="text-[10px] bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded font-medium">Advanced</span>
+                        </div>
+                        <ol class="list-decimal list-inside space-y-1.5 text-gray-400">
+                            <li>Visit <a href="https://vercel.com" target="_blank" class="text-teal-400 hover:underline">vercel.com</a> and sign up for a hobby tier.</li>
+                            <li>Import your hosted GitHub repository containing your file.</li>
+                            <li>Click the single-button "Deploy" command.</li>
+                            <li>Vercel automatically sets up CDN routing and responsive optimization for global audiences.</li>
+                        </ol>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-gray-800/60 text-gray-500 text-[11px]">
+                        Provides exceptional performance speeds and automated deployment updates.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer Copyright Disclaimer Bar -->
+    <footer class="bg-gray-950 text-center py-4 text-xs text-gray-600 border-t border-gray-900 mt-6">
+        <p>&copy; 2026 ProteoMed Educational Pipeline. Developed as an interactive medical pedagogical resource.</p>
+        <p class="text-[10px] text-gray-700 mt-1 italic">Disclaimer: Simulated clinical data for medical school pedagogical modeling and examination purposes only.</p>
+    </footer>
+
+    <!-- INTERACTIVE APPLICATION JAVASCRIPT STATE CONTROLLER -->
+    <script>
+        // Complex Database Schema managing simulation scenarios
+        const caseDatabase = {
+            case1: {
+                title: "Patient Presentation: Chest Pain Evaluation",
+                desc: "A 58-year-old male arrives at the Emergency Department with crushing substernal chest pain radiating to the left arm for 2 hours, accompanied by diaphoresis. Electrocardiogram (ECG) shows equivocal ST-segment modifications. Immediate clinical verification requires rapid biomarker profiling to differentiate acute myocardial infarction from non-cardiac chest pain.",
+                tag: "Critical Care Unit",
+                tagClass: "bg-rose-500/10 border-rose-500/20 text-rose-400",
+                challenge: "Isolate Myocardial Injury Early",
+                method: "Targeted MS / Immunoassay",
+                steps: [
+                    {
+                        title: "Biofluid Collection & Fractionation",
+                        desc: "Isolating blood plasma from cells to capture shedding markers.",
+                        canvasTitle: "Interactive Window: Sample Preparation",
+                        prompt: "Click on the blood sample tube to run the centrifuge and separate cellular fractions from diagnostic plasma.",
+                        insightHeading: "Centrifugation & High-Abundance Depletion",
+                        insightBody: "To uncover low-concentration cardiac biomarkers shedding from ischemic tissue, plasma proteins like albumin and immunoglobulins must be fractionated. Without active depletion, these high-abundance matrix elements override detection instruments, hiding crucial trace biomarkers.",
+                        interactive: true,
+                        interacted: false,
+                        render: (state) => {
+                            if (!state.interacted) {
+                                return `
+                                    <!-- Centrifuge Machine Unspun State -->
+                                    <g class="cursor-pointer" onclick="triggerInteraction()">
+                                        <rect x="220" y="80" width="160" height="180" rx="20" fill="#1f2937" stroke="#374151" stroke-width="4"/>
+                                        <circle cx="300" cy="160" r="50" fill="#111827" stroke="#e5e7eb" stroke-width="6" stroke-dasharray="10, 5"/>
+                                        <!-- Test Tube 1 Vertical -->
+                                        <g transform="translate(290, 120)">
+                                            <rect x="0" y="0" width="20" height="70" rx="10" fill="#ef4444" opacity="0.8"/>
+                                            <rect x="0" y="0" width="20" height="15" fill="#991b1b"/>
+                                        </g>
+                                        <text x="300" y="295" fill="#38bdf8" font-size="13" font-weight="bold" text-anchor="middle" class="pulse-slow">CLICK TUBE TO CENTRIFUGE</text>
+                                    </g>
+                                `;
+                            } else {
+                                return `
+                                    <!-- Centrifuge Machine Spun / Separated State -->
+                                    <g>
+                                        <rect x="220" y="80" width="160" height="180" rx="20" fill="#1f2937" stroke="#10b981" stroke-width="4"/>
+                                        <circle cx="300" cy="160" r="50" fill="#111827" stroke="#10b981" stroke-width="4"/>
+                                        <!-- Separated Blood Tube -->
+                                        <g transform="translate(290, 120)">
+                                            <!-- Plasma Yellow Layer -->
+                                            <rect x="0" y="0" width="20" height="40" rx="5" fill="#fef08a"/>
+                                            <!-- Buffy Coat White Layer -->
+                                            <rect x="0" y="40" width="20" height="5" fill="#ffffff"/>
+                                            <!-- RBC Red Layer -->
+                                            <rect x="0" y="45" width="20" height="25" rx="5" fill="#b91c1c"/>
+                                            <rect x="0" y="0" width="20" height="12" fill="#991b1b"/>
+                                        </g>
+                                        <path d="M 330 140 Q 380 120 420 130" fill="none" stroke="#34d399" stroke-width="2" stroke-dasharray="4,4"/>
+                                        <text x="430" y="135" fill="#34d399" font-size="11" font-weight="bold">Isolated Serum Plasma Layer</text>
+                                        <text x="300" y="295" fill="#10b981" font-size="13" font-weight="bold" text-anchor="middle">✔ FRACTIONATION COMPLETE</text>
+                                    </g>
+                                `;
+                            }
+                        }
+                    },
+                    {
+                        title: "Mass Spectrometry Ionization",
+                        desc: "Converting complex peptides into charged gaseous ions.",
+                        canvasTitle: "Interactive Window: Electrospray Ionization (ESI)",
+                        prompt: "Click on the voltage nozzle emitter tip to vaporize and charge the cardiac biomarkers.",
+                        insightHeading: "The Soft Ionization Paradigm",
+                        insightBody: "Electrospray Ionization (ESI) applies high voltage directly to liquid samples, gently aerosolizing peptides into intact gas-phase ions without destroying protein structures. This capability allows researchers to evaluate massive biomolecules accurately without fragmenting them beforehand.",
+                        interactive: true,
+                        interacted: false,
+                        render: (state) => {
+                            if (!state.interacted) {
+                                return `
+                                    <!-- ESI Nozzle Pre-ionized -->
+                                    <g class="cursor-pointer" onclick="triggerInteraction()">
+                                        <path d="M 50 150 L 200 150 L 230 170 L 230 180 L 200 200 L 50 200 Z" fill="#374151" stroke="#4b5563" stroke-width="3"/>
+                                        <rect x="230" y="172" width="40" height="6" fill="#9ca3af"/>
+                                        <!-- Droplet at tip -->
+                                        <circle cx="273" cy="175" r="5" fill="#38bdf8"/>
+                                        <!-- Target MS Detector -->
+                                        <rect x="480" y="100" width="40" height="150" rx="10" fill="#1f2937" stroke="#374151" stroke-width="2"/>
+                                        <text x="500" y="180" fill="#6b7280" font-size="12" text-anchor="middle" transform="rotate(90 500 180)">MS INLET</text>
+                                        <text x="300" y="290" fill="#38bdf8" font-size="13" font-weight="bold" text-anchor="middle" class="pulse-slow">CLICK EMITTER TIP TO IONIZE</text>
+                                    </g>
+                                `;
+                            } else {
+                                return `
+                                    <!-- ESI Nozzle Active Ion Spray Plume -->
+                                    <g>
+                                        <path d="M 50 150 L 200 150 L 230 170 L 230 180 L 200 200 L 50 200 Z" fill="#374151" stroke="#10b981" stroke-width="3"/>
+                                        <rect x="230" y="172" width="40" height="6" fill="#9ca3af"/>
+                                        <!-- Spray Plume Dispersion -->
+                                        <path d="M 270 175 C 330 140, 400 120, 480 140 M 270 175 C 330 175, 400 175, 480 175 M 270 175 C 330 210, 400 230, 480 210" fill="none" stroke="#34d399" stroke-width="2" stroke-dasharray="2,4"/>
+                                        <!-- Flying Charged Ions (+) -->
+                                        <circle cx="330" cy="155" r="6" fill="#10b981"/><text x="330" y="159" fill="#fff" font-size="10" text-anchor="middle">+</text>
+                                        <circle cx="390" cy="185" r="6" fill="#10b981"/><text x="390" y="189" fill="#fff" font-size="10" text-anchor="middle">+</text>
+                                        <circle cx="440" cy="140" r="6" fill="#10b981"/><text x="440" y="144" fill="#fff" font-size="10" text-anchor="middle">+</text>
+                                        <!-- MS Input Glow -->
+                                        <rect x="480" y="100" width="40" height="150" rx="10" fill="#111827" stroke="#10b981" stroke-width="3"/>
+                                        <text x="500" y="180" fill="#10b981" font-size="12" text-anchor="middle" transform="rotate(90 500 180)" font-weight="bold">ACTIVE INLET</text>
+                                        <text x="300" y="290" fill="#10b981" font-size="13" font-weight="bold" text-anchor="middle">✔ ION BEAM ACCELERATED</text>
+                                    </g>
+                                `;
+                            }
+                        }
+                    },
+                    {
+                        title: "Spectral Profiling & Diagnostic Discovery",
+                        desc: "Identifying exact mass-to-charge ratios to identify disease proteins.",
+                        canvasTitle: "Interactive Window: Mass-to-Charge Spectrum Analysis",
+                        prompt: "Click anywhere inside the dark graph canvas grid to align spectral peaks with clinical values.",
+                        insightHeading: "Biomarker Verification & Diagnosis",
+                        insightBody: "A prominent spectral peak detected at 24.3 kDa reveals high quantities of Cardiac Troponin T (cTnT) in the blood. Combined with real-time measurement profiles, this diagnostic signal confirms severe myocardial cell necrosis. This reading lets clinicians rule out muscle strain and instantly confirm an acute myocardial infarction.",
+                        interactive: true,
+                        interacted: false,
+                        render: (state) => {
+                            if (!state.interacted) {
+                                return `
+                                    <!-- Blank Diagnostic Mass Spectrum Chart -->
+                                    <g class="cursor-pointer" onclick="triggerInteraction()">
+                                        <line x1="80" y1="50" x2="80" y2="250" stroke="#4b5563" stroke-width="3"/>
+                                        <line x1="80" y1="250" x2="520" y2="250" stroke="#4b5563" stroke-width="3"/>
+                                        <text x="50" y="150" fill="#9ca3af" font-size="11" text-anchor="middle" transform="rotate(-90 50 150)">Relative Intensity (%)</text>
+                                        <text x="300" y="280" fill="#9ca3af" font-size="11" text-anchor="middle">Mass-to-Charge Ratio (m/z)</text>
+                                        <text x="300" y="150" fill="#38bdf8" font-size="13" font-weight="bold" text-anchor="middle" class="pulse-slow">CLICK TO COMPUTE CLINICAL SPECTRUM</text>
+                                    </g>
+                                `;
+                            } else {
+                                return `
+                                    <!-- Discovered Troponin Diagnostics Spectrum Chart -->
+                                    <g>
+                                        <line x1="80" y1="50" x2="80" y2="250" stroke="#4b5563" stroke-width="3"/>
+                                        <line x1="80" y1="250" x2="520" y2="250" stroke="#4b5563" stroke-width="3"/>
+                                        <!-- Baseline Noise Peaks -->
+                                        <path d="M 80 250 L 140 248 L 160 230 L 180 250 L 220 245 L 250 250" fill="none" stroke="#4b5563" stroke-width="2"/>
+                                        <!-- Massive Cardiac Troponin T Peak Diagnostic Sign -->
+                                        <path d="M 250 250 L 290 245 L 310 70 L 330 248 L 400 250" fill="none" stroke="#f43f5e" stroke-width="4"/>
+                                        <!-- Other generic background plasma peaks -->
+                                        <path d="M 400 250 L 430 190 L 450 250 L 520 248" fill="none" stroke="#3b82f6" stroke-width="2"/>
+                                        <!-- Annotation Label Callout Box -->
+                                        <rect x="320" y="60" width="170" height="45" rx="8" fill="#111827" stroke="#f43f5e" stroke-width="1.5"/>
+                                        <text x="330" y="78" fill="#fff" font-size="11" font-weight="bold">DIAGNOSTIC PEAK FOUND</text>
+                                        <text x="330" y="93" fill="#f43f5e" font-size="11" font-mono>Cardiac Troponin T (+)</text>
+                                        <text x="300" y="280" fill="#9ca3af" font-size="11" text-anchor="middle">Mass-to-Charge Ratio (m/z)</text>
+                                        <text x="300" y="150" fill="#10b981" font-size="14" font-weight="bold" text-anchor="middle" opacity="0.15">ACUTE MI CONFIRMED</text>
+                                    </g>
+                                `;
+                            }
+                        }
+                    }
+                ]
+            },
+            case2: {
+                title: "Oncology: Early Pancreatic Adenocarcinoma Screen",
+                desc: "A 62-year-old female presents with vague epigastric discomfort, unexplained weight loss, and recent onset of atypical diabetes. Given the exceptionally high mortality rate of pancreatic cancer when diagnosed late, you run comparative high-throughput quantitative liquid chromatography-tandem mass spectrometry (LC-MS/MS) on serum profiles to screen for emerging oncological biomarkers before metastasis occurs.",
+                tag: "Oncology Screening",
+                tagClass: "bg-purple-500/10 border-purple-500/20 text-purple-400",
+                challenge: "Identify Early Oncological Signals",
+                method: "TMT Quantitative LC-MS/MS",
+                steps: [
+                    {
+                        title: "Biofluid Collection & Fractionation",
+                        desc: "Digesting patient serum into specialized tryptic peptides.",
+                        canvasTitle: "Interactive Window: Enzymatic Tryptic Cleavage",
+                        prompt: "Click on the intact tumor protein strand to trigger trypsin enzymes and digest it into measurable peptides.",
+                        insightHeading: "Bottom-Up Shotgun Proteomics",
+                        insightBody: "Intact tumor proteins are often too heavy and complex for direct mass spectrometry analysis. In 'bottom-up' proteomics, we use enzymes like trypsin to cut long amino acid chains after specific residues (Lysine/Arginine). This breaks them down into neat peptide pieces that instruments can easily analyze and read.",
+                        interactive: true,
+                        interacted: false,
+                        render: (state) => {
+                            if (!state.interacted) {
+                                return `
+                                    <!-- Intact Long Complex Protein Strand chain -->
+                                    <g class="cursor-pointer" onclick="triggerInteraction()">
+                                        <path d="M 50 160 Q 150 120, 250 180 T 450 150 T 550 170" fill="none" stroke="#a855f7" stroke-width="6" stroke-linecap="round"/>
+                                        <circle cx="120" cy="145" r="10" fill="#111827" stroke="#c084fc" stroke-width="2"/>
+                                        <text x="120" y="149" fill="#c084fc" font-size="10" text-anchor="middle" font-weight="bold">K</text>
+                                        <circle cx="330" cy="165" r="10" fill="#111827" stroke="#c084fc" stroke-width="2"/>
+                                        <text x="330" y="169" fill="#c084fc" font-size="10" text-anchor="middle" font-weight="bold">R</text>
+                                        <text x="300" y="280" fill="#a855f7" font-size="13" font-weight="bold" text-anchor="middle" class="pulse-slow">CLICK STRAND TO INJECT TRYPSIN</text>
+                                    </g>
+                                `;
+                            } else {
+                                return `
+                                    <!-- Digested Split Peptides fragments pieces -->
+                                    <g>
+                                        <path d="M 50 160 Q 100 140, 115 145" fill="none" stroke="#c084fc" stroke-width="4" stroke-linecap="round"/>
+                                        <path d="M 130 148 Q 200 160, 250 180 T 325 165" fill="none" stroke="#ca8a04" stroke-width="4" stroke-linecap="round"/>
+                                        <path d="M 340 164 Q 400 150, 450 150 T 550 170" fill="none" stroke="#3b82f6" stroke-width="4" stroke-linecap="round"/>
+                                        <!-- Active Enzyme Scissors visual graphics icons -->
+                                        <text x="120" y="120" fill="#eab308" font-size="18"><i class="fa-solid fa-scissors"></i></text>
+                                        <text x="330" y="130" fill="#eab308" font-size="18"><i class="fa-solid fa-scissors"></i></text>
+                                        <text x="300" y="280" fill="#22c55e" font-size="13" font-weight="bold" text-anchor="middle">✔ PROTEIN DIGESTED INTO PEPTIDES</text>
+                                    </g>
+                                `;
+                            }
+                        }
+                    },
+                    {
+                        title: "Mass Spectrometry Ionization",
+                        desc: "Applying isobaric Tandem Mass Tagging (TMT) to screen variations.",
+                        canvasTitle: "Interactive Window: Isobaric Multiplex Multiplexing",
+                        prompt: "Click on the tag multiplex array icon to chemically label different patient sample pools simultaneously.",
+                        insightHeading: "TMT Tags Multiplexing Advantages",
+                        insightBody: "Isobaric Tandem Mass Tagging (TMT) lets researchers analyze up to 16 distinct patient samples in a single instrument run. Each sample gets a label that weighs exactly the same at first, but breaks apart during collision fragmentation to reveal a unique reporter barcode. This allows for precise, direct comparison of healthy versus diseased tissue samples.",
+                        interactive: true,
+                        interacted: false,
+                        render: (state) => {
+                            if (!state.interacted) {
+                                return `
+                                    <!-- Non-tagged multiplex representation layout matrix -->
+                                    <g class="cursor-pointer" onclick="triggerInteraction()">
+                                        <rect x="100" y="100" width="100" height="80" rx="10" fill="#1f2937" stroke="#4b5563" stroke-width="2"/>
+                                        <text x="150" y="145" fill="#9ca3af" font-size="11" text-anchor="middle">Control Pool</text>
+                                        <rect x="400" y="100" width="100" height="80" rx="10" fill="#1f2937" stroke="#4b5563" stroke-width="2"/>
+                                        <text x="450" y="145" fill="#9ca3af" font-size="11" text-anchor="middle">Tumor Pool</text>
+                                        <text x="300" y="280" fill="#a855f7" font-size="13" font-weight="bold" text-anchor="middle" class="pulse-slow">CLICK TO AFFIX ISOBARIC TMT TAGS</text>
+                                    </g>
+                                `;
+                            } else {
+                                return `
+                                    <!-- Tagged combined multiplex representation matrix -->
+                                    <g>
+                                        <rect x="100" y="100" width="100" height="80" rx="10" fill="#1e3a8a" stroke="#3b82f6" stroke-width="3"/>
+                                        <text x="150" y="135" fill="#fff" font-size="11" text-anchor="middle" font-weight="bold">Control Pool</text>
+                                        <rect x="135" y="155" width="30" height="15" rx="3" fill="#3b82f6"/>
+                                        <text x="150" y="166" fill="#fff" font-size="9" text-anchor="middle" font-weight="bold">126 Da</text>
+                                        <rect x="400" y="100" width="100" height="80" rx="10" fill="#581c87" stroke="#a855f7" stroke-width="3"/>
+                                        <text x="450" y="135" fill="#fff" font-size="11" text-anchor="middle" font-weight="bold">Tumor Pool</text>
+                                        <rect x="435" y="155" width="30" height="15" rx="3" fill="#a855f7"/>
+                                        <text x="450" y="166" fill="#fff" font-size="9" text-anchor="middle" font-weight="bold">127C Da</text>
+                                        <path d="M 200 140 Q 300 140 400 140" fill="none" stroke="#22c55e" stroke-width="2" stroke-dasharray="4,4"/>
+                                        <text x="300" y="280" fill="#22c55e" font-size="13" font-weight="bold" text-anchor="middle">✔ MULTIPLEX MOLECULAR TAGGING APPLIED</text>
+                                    </g>
+                                `;
+                            }
+                        }
+                    },
+                    {
+                        title: "Spectral Profiling & Diagnostic Discovery",
+                        desc: "Mapping specific expression alterations for early oncology screening.",
+                        canvasTitle: "Interactive Window: Differential Expression Scatter Volcano Plot",
+                        prompt: "Click inside the scatter window frame layout to isolate critical up-regulated markers.",
+                        insightHeading: "The Volcano Plot Significance Paradigm",
+                        insightBody: "This interactive Volcano Plot compares statistical significance against fold-change variation. Proteins in the top-right corner are highly elevated in patient tumor samples. Isolating the distinct CA19-9 and TIMP1 protein markers allows for reliable early screening of asymptomatic pancreatic cancer.",
+                        interactive: true,
+                        interacted: false,
+                        render: (state) => {
+                            if (!state.interacted) {
+                                return `
+                                    <!-- Empty volcano chart framework layout coordinates -->
+                                    <g class="cursor-pointer" onclick="triggerInteraction()">
+                                        <line x1="100" y1="50" x2="100" y2="250" stroke="#4b5563" stroke-width="3"/>
+                                        <line x1="60" y1="250" x2="500" y2="250" stroke="#4b5563" stroke-width="3"/>
+                                        <text x="280" y="280" fill="#9ca3af" font-size="11" text-anchor="middle">Fold Change (Log2)</text>
+                                        <text x="50" y="150" fill="#9ca3af" font-size="11" text-anchor="middle" transform="rotate(-90 50 150)">Significance (-Log10 p-value)</text>
+                                        <text x="280" y="150" fill="#a855f7" font-size="13" font-weight="bold" text-anchor="middle" class="pulse-slow">CLICK TO PLOT QUANTITATIVE VOLCANO RELEASES</text>
+                                    </g>
+                                `;
+                            } else {
+                                return `
+                                    <!-- Rendered full interactive medical volcano chart -->
+                                    <g>
+                                        <line x1="280" y1="50" x2="280" y2="250" stroke="#374151" stroke-width="2" stroke-dasharray="4,4"/>
+                                        <line x1="80" y1="250" x2="480" y2="250" stroke="#4b5563" stroke-width="3"/>
+                                        <line x1="80" y1="120" x2="480" y2="120" stroke="#ef4444" stroke-width="1" stroke-dasharray="2,2"/>
+                                        <!-- Unchanged background cell housekeeping proteins scattered -->
+                                        <circle cx="280" cy="220" r="4" fill="#6b7280" opacity="0.6"/>
+                                        <circle cx="240" cy="180" r="4" fill="#6b7280" opacity="0.6"/>
+                                        <circle cx="310" cy="190" r="4" fill="#6b7280" opacity="0.6"/>
+                                        <circle cx="200" cy="235" r="4" fill="#6b7280" opacity="0.6"/>
+                                        <!-- Significantly up-regulated specific clinical diagnostic targets -->
+                                        <circle cx="410" cy="80" r="7" fill="#a855f7"/>
+                                        <text x="425" y="84" fill="#a855f7" font-size="11" font-weight="bold">TIMP1 (Highly Elevated)</text>
+                                        <circle cx="440" cy="110" r="7" fill="#a855f7"/>
+                                        <text x="455" y="114" fill="#a855f7" font-size="11" font-weight="bold">CA19-9</text>
+                                        <text x="280" y="280" fill="#9ca3af" font-size="11" text-anchor="middle">Fold Change (Log2)</text>
+                                        <text x="280" y="25" fill="#22c55e" font-size="13" font-weight="bold" text-anchor="middle">✔ COMPLETED DISCOVERY PROFILE SCREEN</text>
+                                    </g>
+                                `;
+                            }
+                        }
+                    }
+                ]
+            }
+        };
+
+        // State machine state tracking
+        let currentCaseId = "case1";
+        let currentStepIndex = 0;
+
+        // Function to initialize or refresh the current step UI components
+        function updateUI() {
+            const currentCase = caseDatabase[currentCaseId];
+            const currentStep = currentCase.steps[currentStepIndex];
+
+            // Render Core text fields dynamically
+            document.getElementById("patient-title").innerText = currentCase.title;
+            document.getElementById("patient-desc").innerText = currentCase.desc;
+            document.getElementById("patient-tag").innerText = currentCase.tag;
+            document.getElementById("patient-tag").className = `text-[11px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1 ${currentCase.tagClass}`;
+            document.getElementById("meta-challenge").innerText = currentCase.challenge;
+            document.getElementById("meta-method").innerText = currentCase.method;
+            
+            document.getElementById("canvas-title").innerText = currentStep.canvasTitle;
+            document.getElementById("prompt-text").innerText = currentStep.prompt;
+            document.getElementById("insight-heading").innerText = currentStep.insightHeading;
+            document.getElementById("insight-body").innerText = currentStep.insightBody;
+            
+            // Adjust status indicator line text metrics
+            document.getElementById("canvas-status").innerText = currentStep.interacted ? "Status: Simulation Tier Active" : "Status: Awaiting Interaction";
+            document.getElementById("canvas-status").className = currentStep.interacted ? "text-[11px] font-mono text-emerald-400 font-bold" : "text-[11px] font-mono text-amber-500 animate-pulse";
+
+            // Loop to configure selection states across left side panel task buttons
+            for (let i = 0; i < 3; i++) {
+                const btn = document.getElementById(`step-${i}`);
+                const titleText = document.getElementById(`step-title-${i}`);
+                const descText = document.getElementById(`step-desc-${i}`);
+                
+                // Fetch template data values dynamically for navigation indicators
+                titleText.innerText = currentCase.steps[i].title;
+                descText.innerText = currentCase.steps[i].desc;
+
+                if (i === currentStepIndex) {
+                    btn.className = "w-full text-left p-3 rounded-xl border border-teal-500/30 bg-teal-950/20 text-teal-300 flex items-start gap-3 transition-all duration-200";
+                    btn.children[0].className = "w-5 h-5 rounded-full bg-teal-500 text-gray-950 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5";
+                } else {
+                    btn.className = "w-full text-left p-3 rounded-xl border border-gray-800 hover:border-gray-700 bg-gray-950/40 text-gray-400 flex items-start gap-3 transition-all duration-200";
+                    btn.children[0].className = "w-5 h-5 rounded-full bg-gray-800 text-gray-400 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5";
+                }
+            }
+
+            // Adjust overall workflow navigation state conditions
+            document.getElementById("btn-prev").disabled = (currentStepIndex === 0);
+            if (currentStepIndex === currentCase.steps.length - 1) {
+                document.getElementById("btn-next").innerHTML = 'Restart Scenario <i class="fa-solid fa-rotate-right ml-1.5"></i>';
+            } else {
+                document.getElementById("btn-next").innerHTML = 'Next Tier <i class="fa-solid fa-chevron-right ml-1.5"></i>';
+            }
+
+            // Execute isolated SVG canvas rendering engine update
+            document.getElementById("animation-viewport").innerHTML = currentStep.render(currentStep);
+        }
+
+        // Trigger interaction state toggle handler when elements on viewport are engaged
+        function triggerInteraction() {
+            const currentCase = caseDatabase[currentCaseId];
+            currentCase.steps[currentStepIndex].interacted = true;
+            updateUI();
+        }
+
+        // Step navigation procedures
+        function goToStep(index) {
+            currentStepIndex = index;
+            updateUI();
+        }
+
+        function nextStep() {
+            const currentCase = caseDatabase[currentCaseId];
+            if (currentStepIndex < currentCase.steps.length - 1) {
+                currentStepIndex++;
+            } else {
+                // Reset scenario loop array values
+                currentCase.steps.forEach(s => s.interacted = false);
+                currentStepIndex = 0;
+            }
+            updateUI();
+        }
+
+        function prevStep() {
+            if (currentStepIndex > 0) {
+                currentStepIndex--;
+                updateUI();
+            }
+        }
+
+        // Switch between patient medical profiles tabs
+        function switchCase(caseId) {
+            currentCaseId = caseId;
+            currentStepIndex = 0;
+            
+            // Adjust visualization tabs highlights styles
+            const activeBtn = document.getElementById(`btn-${caseId}`);
+            const inactiveBtn = document.getElementById(`btn-${caseId === 'case1' ? 'case2' : 'case1'}`);
+            
+            activeBtn.className = "flex-1 sm:flex-none text-xs px-4 py-2 rounded-lg font-medium transition-all duration-200 bg-teal-500 text-gray-950 shadow-md";
+            inactiveBtn.className = "flex-1 sm:flex-none text-xs px-4 py-2 rounded-lg font-medium transition-all duration-200 text-gray-400 hover:text-gray-200";
+            
+            updateUI();
+        }
+
+        // Initialize application workflow upon initial load thread
+        window.onload = function() {
+            updateUI();
+        };
+    </script>
+</body>
+</html>
